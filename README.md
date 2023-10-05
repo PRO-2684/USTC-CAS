@@ -1,2 +1,2 @@
 # USTC-CAS
-Simple &amp; elegant Python lib that helps you with CAS system of USTC.
+Simple &amp; elegant Python lib that helps you with CAS system of USTC. (For study purpose only)
