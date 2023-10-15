@@ -1,5 +1,5 @@
 from requests import Session
-from bs4 import BeautifulSoup
+from regex import search
 
 
 class CasClient:
@@ -21,7 +21,7 @@ class CasClient:
         :param username: Your username.
         :param password: Your password.
         :param header: A dict of additional headers to be added to the session object.
-        :param debug: If set to True, the client will not verify the SSL certificate of the CAS server. This is useful when you try to monitor the network traffic using a proxy like Fiddler.
+        :param debug: If set to True, the client will not verify the SSL certificate of the CAS server. This is useful when you try to monitor the network traffic issued by this lib using a proxy like Fiddler.
         """
         self.username = username
         self.password = password
@@ -35,8 +35,8 @@ class CasClient:
         r = self.session.get(url, verify=(not self.debug))
         if r.url == "https://passport.ustc.edu.cn/success.jsp":
             return True # Already logged in
-        soup = BeautifulSoup(r.text, "html.parser")
-        cas_lt = soup.find("input", {"name": "CAS_LT"})["value"]
+        s = search(r'\$\("#CAS_LT"\).val\("(.*)"\);', r.text)
+        cas_lt = s.group(1)
         form_data = {
             "model": "uplogin.jsp",
             "CAS_LT": cas_lt,
