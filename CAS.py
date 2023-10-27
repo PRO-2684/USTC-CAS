@@ -15,19 +15,21 @@ class CasClient:
     ```
     """
 
-    def __init__(self, username: str, password: str, header: dict = {}, debug: bool=False) -> None:
+    def __init__(self, username: str, password: str, header: dict = {}, debug: bool=False, verification=None) -> None:
         """Initialize a CAS client.
 
         :param username: Your username.
         :param password: Your password.
         :param header: A dict of additional headers to be added to the session object.
         :param debug: If set to True, the client will not verify the SSL certificate of the CAS server. This is useful when you try to monitor the network traffic issued by this lib using a proxy like Fiddler.
+        :param verification: Verification code processing function. Takes binary as input and returns the verification code as a string. If not provided, the client will try to bypass verification code.
         """
         self.username = username
         self.password = password
         self.session = Session()
         self.session.headers.update(header)
         self.debug = debug
+        self.verification = verification
 
     def login(self) -> bool:
         """Login to CAS. Return True if login succeeds, False otherwise."""
@@ -42,11 +44,14 @@ class CasClient:
             "CAS_LT": cas_lt,
             "service": "",
             "warn": "",
-            "showCode": "",
+            "showCode": "1" if self.verification else "",
             "username": self.username,
             "password": self.password,
             "button": "",
         }
+        if self.verification:
+            r = self.session.get("https://passport.ustc.edu.cn/validatecode.jsp?type=login", verify=(not self.debug))
+            form_data["LT"] = self.verification(r.content)
         r = self.session.post(url, data=form_data, allow_redirects=False, verify=(not self.debug))
         return (r.status_code == 302) and (r.headers["location"] == "https://passport.ustc.edu.cn/success.jsp")
 
