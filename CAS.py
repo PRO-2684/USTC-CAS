@@ -1,5 +1,6 @@
 from requests import Session
 from regex import search
+from code_recognize import recognizeBytes
 
 
 class CasClient:
@@ -15,7 +16,9 @@ class CasClient:
     ```
     """
 
-    def __init__(self, username: str, password: str, header: dict = {}, debug: bool=False, verification=None) -> None:
+    def __init__(
+        self, username: str, password: str, header: dict = {}, debug: bool = False
+    ) -> None:
         """Initialize a CAS client.
 
         :param username: Your username.
@@ -29,31 +32,40 @@ class CasClient:
         self.session = Session()
         self.session.headers.update(header)
         self.debug = debug
-        self.verification = verification
 
     def login(self) -> bool:
         """Login to CAS. Return True if login succeeds, False otherwise."""
         url = "https://passport.ustc.edu.cn/login"
         r = self.session.get(url, verify=(not self.debug))
         if r.url == "https://passport.ustc.edu.cn/success.jsp":
-            return True # Already logged in
+            return True  # Already logged in
         s = search(r'\$\("#CAS_LT"\).val\("(.*)"\);', r.text)
         cas_lt = s.group(1)
+        need_verification = (
+            "var showCode = '1';" in r.text
+        )  # Auto-detect if verification code is required
         form_data = {
             "model": "uplogin.jsp",
             "CAS_LT": cas_lt,
             "service": "",
             "warn": "",
-            "showCode": "1" if self.verification else "",
+            "showCode": "1" if need_verification else "",
             "username": self.username,
             "password": self.password,
             "button": "",
         }
-        if self.verification:
-            r = self.session.get("https://passport.ustc.edu.cn/validatecode.jsp?type=login", verify=(not self.debug))
-            form_data["LT"] = self.verification(r.content)
-        r = self.session.post(url, data=form_data, allow_redirects=False, verify=(not self.debug))
-        return (r.status_code == 302) and (r.headers["location"] == "https://passport.ustc.edu.cn/success.jsp")
+        if need_verification:  # Verification code required
+            r = self.session.get(
+                "https://passport.ustc.edu.cn/validatecode.jsp?type=login",
+                verify=(not self.debug),
+            )
+            form_data["LT"] = recognizeBytes(r.content)
+        r = self.session.post(
+            url, data=form_data, allow_redirects=False, verify=(not self.debug)
+        )
+        return (r.status_code == 302) and (
+            r.headers["location"] == "https://passport.ustc.edu.cn/success.jsp"
+        )
 
     def service(self, serv_url: str) -> bool | str:
         """Login to service at given url. Return False if not logged in, or the final url if logged in.
