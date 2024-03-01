@@ -1,5 +1,5 @@
 from requests import Session
-from regex import search
+from re import search
 from code_recognize import recognizeBytes
 
 
