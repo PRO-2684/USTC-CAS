@@ -2,7 +2,6 @@ from requests import Session
 from re import search
 from code_recognize import recognizeBytes
 
-
 class CasClient:
     """Class representing a CAS client. Example usage:
 
@@ -30,6 +29,9 @@ class CasClient:
         """
         self.username = username
         self.password = password
+        assert len(fingerprint) == 64, "Invalid fingerprint (expected length of 64)"
+        fingerprint = fingerprint.lower()
+        assert all(c in "0123456789abcdef" for c in fingerprint), "Invalid fingerprint (expected hexadecimal lowercase)"
         self.fingerprint = fingerprint
         self.session = Session()
         self.session.headers.update(header)

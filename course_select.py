@@ -28,7 +28,7 @@ def format_lesson(lesson):
 
 
 def main_loop(config):
-    jw = JW(CasClient(config["cas"]["username"], config["cas"]["password"]))
+    jw = JW(CasClient(config["cas"]["username"], config["cas"]["password"], config["cas"]["fingerprint"]))
     jw.login()
     courses = jw.selectable_courses()
 
@@ -83,7 +83,8 @@ if __name__ == "__main__":
 #     },
 #     "cas": {
 #         "username": "PBxxxxxxxx",
-#         "password": "xxx"
+#         "password": "xxx",
+#         "fingerprint": "ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff"
 #     },
 #     "courses": [
 #         "MARX1501M.01"
