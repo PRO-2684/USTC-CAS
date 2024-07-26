@@ -10,6 +10,9 @@ REFRESH_INTERVAL = 10  # Iterations between each refresh of max student count of
 
 
 def send(title, content, email_config):
+    print(f"  {title}: {content}")
+    if email_config["enabled"] is False:
+        return
     mail_from = email_config["username"]
     pwd = email_config["password"]
     mail_to = email_config["mail_to"]
@@ -17,7 +20,7 @@ def send(title, content, email_config):
     msg["Subject"] = title
     msg["From"] = mail_from
     msg["To"] = mail_to
-    ss = SMTP_SSL("smtp.qq.com")
+    ss = SMTP_SSL(email_config["host"])
     ss.login(mail_from, pwd)
     ss.sendmail(mail_from, mail_to, msg.as_string())
     ss.quit()
@@ -40,6 +43,7 @@ def main_loop(config):
             data = jw._get_std_count(int(courses[code]["id"]) for code in desiredCodes)
         except RuntimeError:
             jw.login()
+            sleep(SLEEP_INTERVAL)
             continue
 
         t = localtime(time())
@@ -56,7 +60,6 @@ def main_loop(config):
             lesson = courses[code]
             if data[str(lesson["id"])] < lesson["limitCount"]:
                 s = f"{format_lesson(lesson)} now available! {data[str(lesson['id'])]} / {lesson['limitCount']}"
-                print("  " + s)
                 if jw.select_course(lesson["id"]):
                     send("Course select success!", s, config["email"])
                     desiredCodes.remove(lesson["code"])
@@ -77,6 +80,8 @@ if __name__ == "__main__":
 # Example of config.json
 # {
 #     "email": {
+#         "enabled": true,
+#         "host": "smtp.qq.com",
 #         "username": "abc@example.com",
 #         "password": "xxx",
 #         "mail_to": "def@example.com"
