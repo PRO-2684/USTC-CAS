@@ -1,5 +1,4 @@
 from PIL import Image
-from numpy import array, mean
 from io import BytesIO
 
 TEMPLATE = [
@@ -17,17 +16,21 @@ TEMPLATE = [
 
 
 def recognizeImg(img: Image.Image) -> str:
-    img.resize((128, 32))
-    img_data = array(img)
-    green_average = mean(
-        img_data[:, :, 1]
-    )  # Calculate the average of the green channel
+    width, height = img.size
+    assert width == 120 and height == 32, "Invalid image size"
+    img_data = img.load()
+    # Calculate the average of the green channel
+    green_average = 0
+    for x in range(width):
+        for y in range(height):
+            green_average += img_data[x, y][1]
+    green_average /= width * height
 
     numbers = ["", "", "", ""]
     for i in range(4, 26):
         for k in range(4):
             for j in range(26 + 21 * k, 46 + 21 * k):
-                pixel = "0" if img_data[i, j, 1] > green_average else "1"
+                pixel = "0" if img_data[j, i][1] > green_average else "1"
                 numbers[k] += pixel
 
     code = ""
