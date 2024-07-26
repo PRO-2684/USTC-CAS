@@ -17,18 +17,20 @@ class CasClient:
     """
 
     def __init__(
-        self, username: str, password: str, header: dict = {}, debug: bool = False
+        self, username: str, password: str, fingerprint: str, header: dict = {}, debug: bool = False
     ) -> None:
         """Initialize a CAS client.
 
         :param username: Your username.
         :param password: Your password.
+        :param fingerprint: The fingerprint of your verified device. Obtain it by executing `document.querySelector("#resultInput")?.value` in the browser console at `https://passport.ustc.edu.cn/login`, or install [USTC Helper](https://greasyfork.org/scripts/453530) and enable "Show fingerprint".
         :param header: A dict of additional headers to be added to the session object.
         :param debug: If set to True, the client will not verify the SSL certificate of the CAS server. This is useful when you try to monitor the network traffic issued by this lib using a proxy like Fiddler.
         :param verification: Verification code processing function. Takes binary as input and returns the verification code as a string. If not provided, the client will try to bypass verification code.
         """
         self.username = username
         self.password = password
+        self.fingerprint = fingerprint
         self.session = Session()
         self.session.headers.update(header)
         self.debug = debug
@@ -50,6 +52,8 @@ class CasClient:
             "service": "",
             "warn": "",
             "showCode": "1" if need_verification else "",
+            "qrcode": "",
+            "resultInput": self.fingerprint,
             "username": self.username,
             "password": self.password,
             "button": "",
