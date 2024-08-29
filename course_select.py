@@ -5,7 +5,7 @@ from time import localtime, sleep, time
 
 from jw import JW, CasClient
 
-SLEEP_INTERVAL = 30  # Duration between each request of selected student count
+SLEEP_INTERVAL = 20  # Duration between each request of selected student count
 REFRESH_INTERVAL = 10  # Iterations between each refresh of max student count of courses
 
 
