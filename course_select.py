@@ -5,7 +5,7 @@ from time import localtime, sleep, time
 
 from jw import JW, CasClient
 
-SLEEP_INTERVAL = 20  # Duration between each request of selected student count
+SLEEP_INTERVAL = 10  # Duration between each request of selected student count
 REFRESH_INTERVAL = 10  # Iterations between each refresh of max student count of courses
 
 
@@ -33,25 +33,24 @@ def format_lesson(lesson):
 def main_loop(config):
     jw = JW(CasClient(config["cas"]["username"], config["cas"]["password"], config["cas"]["fingerprint"]))
     jw.login()
-    courses = jw.selectable_courses()
 
     desiredCodes = config["courses"]
     i = 0
 
     while True:
+        t = localtime(time())
+        print(f"[{t.tm_hour:02}:{t.tm_min:02}:{t.tm_sec:02}]")
+        if i == 0:
+            print("  Refreshing courses...")
+            courses = jw.selectable_courses()
+        i = (i + 1) % REFRESH_INTERVAL
+
         try:
-            data = jw._get_std_count(int(courses[code]["id"]) for code in desiredCodes)
+            data = jw._get_std_count(int(courses[code]["id"]) for code in desiredCodes if code in courses)
         except RuntimeError:
             jw.login()
             sleep(SLEEP_INTERVAL)
             continue
-
-        t = localtime(time())
-        print(f"[{t.tm_hour:02}:{t.tm_min:02}:{t.tm_sec:02}]")
-        i = (i + 1) % REFRESH_INTERVAL
-        if i == 0:
-            print("  Refreshing courses...")
-            courses = jw.selectable_courses()
 
         if len(desiredCodes) == 0:
             break
@@ -60,10 +59,15 @@ def main_loop(config):
             lesson = courses[code]
             if data[str(lesson["id"])] < lesson["limitCount"]:
                 s = f"{format_lesson(lesson)} now available! {data[str(lesson['id'])]} / {lesson['limitCount']}"
-                if jw.select_course(lesson["id"]):
+                try:
+                    res = jw.select_course(lesson["id"])
+                except RuntimeError as e:
+                    res = [False, str(e)]
+                if res[0]:
                     send("Course select success!", s, config["email"])
                     desiredCodes.remove(lesson["code"])
                 else:
+                    s += "\n" + res[1]
                     send("Course select failed.", s, config["email"])
             else:
                 print(f"  {format_lesson(lesson)} full.")
@@ -75,7 +79,13 @@ if __name__ == "__main__":
     print("Course Select")
     with open("./config.json") as f:
         config = load(f)
-    main_loop(config)
+    while True:
+        try:
+            main_loop(config)
+        except Exception as e:
+            print(f"Error: {e}")
+            sleep(SLEEP_INTERVAL)
+            continue
 
 # Example of config.json
 # {

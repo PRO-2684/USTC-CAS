@@ -144,7 +144,7 @@ class JW:
         data = r.json()
         return data
 
-    def select_course(self, lesson_id: int):
+    def select_course(self, lesson_id: int) -> tuple[bool, str]:
         """Select a course by its id."""
         r = self.session.post(
             f"https://jw.ustc.edu.cn/ws/for-std/course-select/add-request",
@@ -159,7 +159,7 @@ class JW:
         )
         if r.status_code != 200:
             print(r.text)
-            raise RuntimeError("Failed to select course.")
+            return False, f"Failed to select course {lesson_id} (add-request): {r.text}"
         req_id = r.text
         print("req_id:", req_id)
         r = self.session.post(
@@ -171,7 +171,7 @@ class JW:
             verify=(not self.debug),
         )
         if r.status_code != 200:
-            raise RuntimeError("Failed to select course.")
+            return False, f"Failed to select course {lesson_id} (add-drop-response): {r.text}"
         data = r.json()
         print(data)
         success = data["success"]
@@ -180,4 +180,4 @@ class JW:
         else:
             s = f"Failed to select course {lesson_id}: {data['errorMessage']['text']}"
         print(s)
-        return success
+        return success, s
